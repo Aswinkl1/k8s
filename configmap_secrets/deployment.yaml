@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: task-2-38-deployment
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: task-2-38-nginx
+
+  template:
+    metadata:
+      labels:
+        app: task-2-38-nginx
+
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:stable
+          ports:
+            - containerPort: 80
+
+          envFrom:
+            - configMapRef:
+                name: task-2-38-config
+
+          volumeMounts:
+            - name: secret-volume
+              mountPath: /etc/secrets
+              readOnly: true
+
+      volumes:
+        - name: secret-volume
+          secret:
+            secretName: task-2-38-secret

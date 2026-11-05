@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: task-2-38-config
+data:
+  APP_ENV: "dev"
+  LOG_LEVEL: "info"

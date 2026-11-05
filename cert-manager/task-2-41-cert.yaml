@@ -1,0 +1,12 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: task-2-41-cert
+  namespace: aswin-kl
+spec:
+  secretName: task-2-41-tls
+  dnsNames:
+    - task-2-41.example.aswin.com
+  issuerRef:
+    name: task-2-41-issuer
+    kind: Issuer

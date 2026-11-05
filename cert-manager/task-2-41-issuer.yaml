@@ -1,0 +1,7 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: task-2-41-issuer
+  namespace: aswin-kl
+spec:
+  selfSigned: {}
