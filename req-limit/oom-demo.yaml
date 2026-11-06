@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: task-2-43-oom-demo
+  namespace: aswin-kl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: task-2-43-oom-demo
+  template:
+    metadata:
+      labels:
+        app: task-2-43-oom-demo
+    spec:
+      containers:
+        - name: memory-test
+          image: python:3.12-alpine
+          command:
+            - python
+            - -c
+            - |
+              import time
+              data = bytearray(100 * 1024 * 1024)
+              print("Allocated 100Mi", flush=True)
+              time.sleep(60)
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "16Mi"
+            limits:
+              cpu: "200m"
+              memory: "32Mi"

@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: task-2-43-resource-demo
+  namespace: aswin-kl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: task-2-43-resource-demo
+  template:
+    metadata:
+      labels:
+        app: task-2-43-resource-demo
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:stable
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"

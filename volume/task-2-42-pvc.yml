@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: task-2-42-pvc
+  namespace: aswin-kl
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: civo-volume
+  resources:
+    requests:
+      storage: 1Gi
