@@ -1,0 +1,13 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: task-2-46-rolebinding
+  namespace: aswin-kl
+subjects:
+  - kind: ServiceAccount
+    name: task-2-46-serviceaccount
+    namespace: aswin-kl
+roleRef:
+  kind: Role
+  name: task-2-46-role
+  apiGroup: rbac.authorization.k8s.io

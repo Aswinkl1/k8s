@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: task-2-45-service
+  namespace: aswin-kl
+spec:
+  selector:
+    app: task-2-45-app
+  ports:
+    - port: 80
+      targetPort: 80

@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: task-2-45-app
+  namespace: aswin-kl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: task-2-45-app
+  template:
+    metadata:
+      labels:
+        app: task-2-45-app
+    spec:
+      containers:
+        - name: task-2-45-app
+          image: registry.k8s.io/hpa-example
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: 200m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 128Mi

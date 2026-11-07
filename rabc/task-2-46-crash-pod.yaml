@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: task-2-46-crash-pod
+  namespace: aswin-kl
+spec:
+  containers:
+    - name: crash-container
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          echo "Application is starting..."
+          echo "Fatal error: database connection failed"
+          exit 1
+  restartPolicy: Always

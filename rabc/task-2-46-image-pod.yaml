@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: task-2-46-image-pod
+  namespace: aswin-kl
+spec:
+  containers:
+    - name: nginx
+      image: nginx
+
+
+// i have changed this to working . what it is before was the image is like nginx:it-is-not-valid-image

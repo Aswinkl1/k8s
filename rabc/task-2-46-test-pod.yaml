@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: task-2-46-test-pod
+  namespace: aswin-kl
+spec:
+  serviceAccountName: task-2-46-serviceaccount
+  containers:
+    - name: kubectl
+      image: bitnami/kubectl:latest
+      command: ["sleep", "3600"]
+  restartPolicy: Always
