@@ -1,0 +1,38 @@
+replicaCount: 3
+
+appName: task-2-50-app
+
+deployment:
+  name: task-2-50-deployment
+
+image:
+  repository: nginx
+  tag: "1.27"
+  pullPolicy: IfNotPresent
+
+container:
+  name: task-2-50-container
+  port: 80
+
+service:
+  name: task-2-50-service
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  name: task-2-50-ingress
+  className: nginx
+  annotations: {}
+  host: task-2-50.example.com
+  path: /
+  pathType: Prefix
+  tls:
+    enabled: false
+    secretName: task-2-50-tls
+
+configMap:
+  name: task-2-50-configmap
+  data:
+    APP_ENV: development
+    LOG_LEVEL: info

@@ -1,0 +1,11 @@
+helmDefaults:
+  kubeContext: kubenine-intern
+  wait: true
+  timeout: 300
+
+releases:
+  - name: task-2-50-release
+    chart: ../task-2-49-chart
+    namespace: aswin-kl
+    values:
+      - ./task-2-50-values.yaml
