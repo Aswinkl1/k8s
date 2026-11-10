@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: { { .Values.deployment.name } }
+  labels: { { - include "task-2-49.labels" . | nindent 4 } }
+spec:
+  replicas: { { .Values.replicaCount } }
+  selector:
+    matchLabels:
+      app: { { include "task-2-49.name" . } }
+  template:
+    metadata:
+      labels: { { - include "task-2-49.labels" . | nindent 8 } }
+    spec:
+      containers:
+        - name: { { .Values.container.name } }
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: { { .Values.image.pullPolicy } }
+          ports:
+            - containerPort: { { .Values.container.port } }
+          envFrom:
+            - configMapRef:
+                name: { { .Values.configMap.name } }
