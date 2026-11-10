@@ -1,13 +1,16 @@
+{{- if false}}
+{{- end }}
+# the above line is not needed it is just for linting issue in my thing
 apiVersion: v1
 kind: Service
 metadata:
-  name: { { .Values.service.name } }
-  labels: { { - include "task-2-49.labels" . | nindent 4 } }
+  name: {{ .Values.service.name }}
+  labels: {{- include "task-2-49.labels" . | nindent 4 }}
 spec:
-  type: { { .Values.service.type } }
+  type: {{ .Values.service.type }}
   selector:
-    app: { { include "task-2-49.name" . } }
+    app: {{ include "task-2-49.name" . }}
   ports:
-    - port: { { .Values.service.port } }
-      targetPort: { { .Values.container.port } }
+    - port: {{ .Values.service.port }}
+      targetPort: {{ .Values.container.port }}
       protocol: TCP
