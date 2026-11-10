@@ -1,0 +1,6 @@
+apiVersion: v2
+name: task-2-49-chart
+description: Custom Helm chart for Task 2.49
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
