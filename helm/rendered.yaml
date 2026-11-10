@@ -1,0 +1,92 @@
+---
+# Source: task-2-48-app/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: task-2-48-nginx
+  labels:
+    helm.sh/chart: task-2-48-app-0.1.0
+    app.kubernetes.io/name: task-2-48-app
+    app.kubernetes.io/instance: task-2-48-release
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: task-2-48-app
+    app.kubernetes.io/instance: task-2-48-release
+
+---
+# Source: task-2-48-app/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: task-2-48-nginx
+  labels:
+    helm.sh/chart: task-2-48-app-0.1.0
+    app.kubernetes.io/name: task-2-48-app
+    app.kubernetes.io/instance: task-2-48-release
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: task-2-48-app
+      app.kubernetes.io/instance: task-2-48-release
+  template:
+    metadata:
+      labels:
+        helm.sh/chart: task-2-48-app-0.1.0
+        app.kubernetes.io/name: task-2-48-app
+        app.kubernetes.io/instance: task-2-48-release
+        app.kubernetes.io/version: "1.16.0"
+        app.kubernetes.io/managed-by: Helm
+    spec:
+      serviceAccountName: default
+      containers:
+        - name: task-2-48-app
+          image: "nginx:1.27"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+
+---
+# Source: task-2-48-app/templates/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: task-2-48-nginx
+  labels:
+    helm.sh/chart: task-2-48-app-0.1.0
+    app.kubernetes.io/name: task-2-48-app
+    app.kubernetes.io/instance: task-2-48-release
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  rules:
+    - host: "task-2-48.local"
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: task-2-48-nginx
+                port:
+                  number: 80
