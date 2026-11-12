@@ -1,0 +1,359 @@
+helmDefaults:
+  wait: true
+  timeout: 600
+  atomic: true
+  kubeContext: kubenine-intern
+
+repositories:
+  - name: ingress-nginx
+    url: https://kubernetes.github.io/ingress-nginx
+
+  - name: jetstack
+    url: https://charts.jetstack.io
+
+  - name: prometheus-community
+    url: https://prometheus-community.github.io/helm-charts
+
+  - name: grafana-community
+    url: https://grafana-community.github.io/helm-charts
+
+  - name: grafana
+    url: https://grafana.github.io/helm-charts
+
+releases:
+  # ---------------------------------------------
+  # NGINX Ingress Controller
+  # ---------------------------------------------
+  - name: task-2-51-ingress-nginx
+    namespace: aswin-kl
+    chart: ingress-nginx/ingress-nginx
+    version: 4.15.1
+    values:
+      - controller:
+          nodeSelector:
+            kubernetes.io/hostname: k3s-kubenine-intern-3048-ed140f-node-pool-0576-k9hxo
+
+          scope:
+            enabled: true
+            namespace: aswin-kl
+
+          ingressClass: task-2-51-nginx
+
+          ingressClassResource:
+            name: task-2-51-nginx
+            enabled: true
+            default: false
+            controllerValue: k8s.io/task-2-51-ingress-nginx
+
+          electionID: task-2-51-ingress-leader
+
+          service:
+            type: LoadBalancer
+
+  # ---------------------------------------------
+  # cert-manager
+  # ---------------------------------------------
+  - name: task-2-51-cert-manager
+    namespace: aswin-kl
+    chart: jetstack/cert-manager
+    version: v1.20.4
+    needs:
+      - task-2-51-ingress-nginx
+    values:
+      - crds:
+          enabled: true
+
+        extraArgs:
+          - --cluster-resource-namespace=aswin-kl
+
+  # ---------------------------------------------
+  # Prometheus + Grafana + Alertmanager
+  # Namespace-focused monitoring
+  # ---------------------------------------------
+  - name: task-2-51-aswin-prometheus-stack
+    namespace: aswin-kl
+    chart: prometheus-community/kube-prometheus-stack
+    version: 93.2.0
+
+    values:
+      - crds:
+          enabled: false
+
+        # Disable default cluster-wide alert rules
+        defaultRules:
+          create: false
+
+        # Disable cluster-level monitoring targets
+        kubeApiServer:
+          enabled: false
+
+        kubelet:
+          enabled: false
+
+        kubeControllerManager:
+          enabled: false
+
+        coreDns:
+          enabled: false
+
+        kubeDns:
+          enabled: false
+
+        kubeEtcd:
+          enabled: false
+
+        kubeProxy:
+          enabled: false
+
+        kubeScheduler:
+          enabled: false
+
+        # Disable cluster-wide resource metrics collector
+        kubeStateMetrics:
+          enabled: false
+
+        # Disable node-wide metrics collector
+        nodeExporter:
+          enabled: false
+
+        prometheusOperator:
+          # Other operators in this shared cluster watch every namespace.
+          # A controller id makes them skip these objects. Only this operator reconciles them.
+          extraArgs:
+            - --controller-id=task-2-51-aswin
+
+          namespaces:
+            releaseNamespace: true
+
+          # Do not create kubelet monitoring Services
+          kubeletService:
+            enabled: false
+
+        prometheus:
+          annotations:
+            operator.prometheus.io/controller-id: task-2-51-aswin
+
+          prometheusSpec:
+            replicas: 1
+            retention: 7d
+
+            # Only discover ServiceMonitors in aswin-kl
+            serviceMonitorNamespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: aswin-kl
+
+            # Only discover PodMonitors in aswin-kl
+            podMonitorNamespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: aswin-kl
+
+            # Restrict Probe discovery
+            probeNamespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: aswin-kl
+
+            # Restrict ScrapeConfig discovery
+            scrapeConfigNamespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: aswin-kl
+
+            storageSpec:
+              volumeClaimTemplate:
+                spec:
+                  storageClassName: task-2-51-aswin-storage
+                  accessModes:
+                    - ReadWriteOnce
+                  resources:
+                    requests:
+                      storage: 20Gi
+
+        grafana:
+          enabled: true
+
+          persistence:
+            enabled: true
+            storageClassName: task-2-51-aswin-storage
+            accessModes:
+              - ReadWriteOnce
+            size: 5Gi
+
+          deploymentStrategy:
+            type: Recreate
+
+          service:
+            type: ClusterIP
+
+          ingress:
+            enabled: false
+
+          sidecar:
+            dashboards:
+              searchNamespace: aswin-kl
+
+        alertmanager:
+          annotations:
+            operator.prometheus.io/controller-id: task-2-51-aswin
+
+          enabled: true
+
+  # ---------------------------------------------
+  # Loki Log Storage
+  # ---------------------------------------------
+  - name: task-2-51-aswin-loki-stack
+    namespace: aswin-kl
+    chart: grafana-community/loki
+    version: 18.5.0
+
+    values:
+      - deploymentMode: Monolithic
+
+        loki:
+          auth_enabled: false
+
+          commonConfig:
+            replication_factor: 1
+
+          storage:
+            type: filesystem
+
+          schemaConfig:
+            configs:
+              - from: "2024-04-01"
+                store: tsdb
+                object_store: filesystem
+                schema: v13
+                index:
+                  prefix: loki_index_
+                  period: 24h
+
+        singleBinary:
+          replicas: 1
+          persistence:
+            enabled: true
+            storageClass: task-2-51-aswin-storage
+            accessModes:
+              - ReadWriteOnce
+            size: 10Gi
+
+        backend:
+          replicas: 0
+
+        read:
+          replicas: 0
+
+        write:
+          replicas: 0
+
+        ingester:
+          replicas: 0
+
+        querier:
+          replicas: 0
+
+        queryFrontend:
+          replicas: 0
+
+        queryScheduler:
+          replicas: 0
+
+        distributor:
+          replicas: 0
+
+        compactor:
+          replicas: 0
+
+        indexGateway:
+          replicas: 0
+
+        minio:
+          enabled: false
+
+        chunksCache:
+          enabled: false
+
+        resultsCache:
+          enabled: false
+
+        lokiCanary:
+          enabled: false
+
+        test:
+          enabled: false
+
+  # ---------------------------------------------
+  # Grafana Alloy Log Collection
+  # Restricted to aswin-kl namespace
+  # ---------------------------------------------
+  - name: task-2-51-aswin-alloy
+    namespace: aswin-kl
+    chart: grafana/alloy
+
+    values:
+      - crds:
+          create: false
+
+        controller:
+          type: deployment
+          replicas: 1
+
+        rbac:
+          create: true
+          namespaces:
+            - aswin-kl
+
+          rules:
+            - apiGroups: [""]
+              resources:
+                - pods
+                - pods/log
+              verbs:
+                - get
+                - list
+                - watch
+
+          clusterRules: []
+
+        alloy:
+          configMap:
+            content: |
+              logging {
+                level = "info"
+              }
+
+              discovery.kubernetes "pods" {
+                role = "pod"
+
+                namespaces {
+                  names = ["aswin-kl"]
+                }
+              }
+
+              discovery.relabel "pods" {
+                targets = discovery.kubernetes.pods.targets
+
+                rule {
+                  source_labels = ["__meta_kubernetes_namespace"]
+                  target_label  = "namespace"
+                }
+
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_name"]
+                  target_label  = "pod"
+                }
+
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_container_name"]
+                  target_label  = "container"
+                }
+              }
+
+              loki.source.kubernetes "pods" {
+                targets    = discovery.relabel.pods.output
+                forward_to = [loki.write.default.receiver]
+              }
+
+              loki.write "default" {
+                endpoint {
+                  url = "http://task-2-51-aswin-loki-stack-gateway.aswin-kl.svc.cluster.local/loki/api/v1/push"
+                }
+              }

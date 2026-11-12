@@ -1,0 +1,14 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: task-2-51-aswin-grafana-certificate
+  namespace: aswin-kl
+spec:
+  secretName: task-2-51-aswin-grafana-tls
+
+  issuerRef:
+    name: task-2-51-aswin-cluster-issuer
+    kind: ClusterIssuer
+
+  dnsNames:
+    - grafana.aswinkl.online

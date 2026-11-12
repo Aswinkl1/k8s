@@ -1,0 +1,31 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: task-2-51-aswin-grafana-ingress
+  namespace: aswin-kl
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/service-upstream: "true"
+    nginx.ingress.kubernetes.io/proxy-buffering: "on"
+    nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+    nginx.ingress.kubernetes.io/proxy-buffers-number: "4"
+    nginx.ingress.kubernetes.io/proxy-busy-buffers-size: "256k"
+spec:
+  ingressClassName: task-2-51-nginx
+
+  tls:
+    - hosts:
+        - grafana.aswinkl.online
+      secretName: task-2-51-aswin-grafana-tls
+
+  rules:
+    - host: grafana.aswinkl.online
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: task-2-51-aswin-prometheus-stack-grafana
+                port:
+                  number: 80
