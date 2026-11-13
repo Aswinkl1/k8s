@@ -85,7 +85,7 @@ releases:
 
         # Disable cluster-level monitoring targets
         kubeApiServer:
-          enabled: false
+          enabled: true
 
         kubelet:
           enabled: false
@@ -110,11 +110,16 @@ releases:
 
         # Disable cluster-wide resource metrics collector
         kubeStateMetrics:
-          enabled: false
+          enabled: true
 
-        # Disable node-wide metrics collector
+        # Node CPU and memory. Host networking stays off so port 9100
+        # is not taken from the node-exporter already running on these nodes.
         nodeExporter:
-          enabled: false
+          enabled: true
+
+        prometheus-node-exporter:
+          hostNetwork: false
+          hostPID: false
 
         prometheusOperator:
           # Other operators in this shared cluster watch every namespace.
@@ -127,7 +132,7 @@ releases:
 
           # Do not create kubelet monitoring Services
           kubeletService:
-            enabled: false
+            enabled: true
 
         prometheus:
           annotations:
