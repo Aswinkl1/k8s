@@ -48,7 +48,7 @@ releases:
           electionID: task-2-51-ingress-leader
 
           service:
-            type: LoadBalancer
+            type: ClusterIP
 
   # ---------------------------------------------
   # cert-manager
