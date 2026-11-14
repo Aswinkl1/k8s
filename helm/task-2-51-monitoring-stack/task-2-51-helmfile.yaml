@@ -30,8 +30,8 @@ releases:
     version: 4.15.1
     values:
       - controller:
-          nodeSelector:
-            kubernetes.io/hostname: k3s-kubenine-intern-3048-ed140f-node-pool-0576-k9hxo
+          # nodeSelector:
+          #   kubernetes.io/hostname: k3s-kubenine-intern-3048-ed140f-node-pool-0576-k9hxo
 
           scope:
             enabled: true
