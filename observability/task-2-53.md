@@ -180,7 +180,7 @@ rate(container_cpu_cfs_periods_total[5m])
 
 this is how they find the throttle
 
-# # container label of pod
+## container label of pod
 
 on k8s / compute resources / pod we can see that container level metric .
 
