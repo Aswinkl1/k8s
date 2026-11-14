@@ -53,18 +53,18 @@ releases:
   # ---------------------------------------------
   # cert-manager
   # ---------------------------------------------
-  - name: task-2-51-cert-manager
-    namespace: aswin-kl
-    chart: jetstack/cert-manager
-    version: v1.20.4
-    needs:
-      - task-2-51-ingress-nginx
-    values:
-      - crds:
-          enabled: true
+  # - name: task-2-51-cert-manager
+  #   namespace: aswin-kl
+  #   chart: jetstack/cert-manager
+  #   version: v1.20.4
+  #   needs:
+  #     - task-2-51-ingress-nginx
+  #   values:
+  #     - crds:
+  #         enabled: true
 
-        extraArgs:
-          - --cluster-resource-namespace=aswin-kl
+  #       extraArgs:
+  #         - --cluster-resource-namespace=aswin-kl
 
   # ---------------------------------------------
   # Prometheus + Grafana + Alertmanager
