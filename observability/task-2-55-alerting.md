@@ -3,10 +3,14 @@
 ## 1. Contact Point
 
 - **Name:** `task-2-55-contact-point-aswin-kl`
+
 - **Type:** Webhook
+
 - **Provider:** webhook.site
-- **Purpose:** Receive alert notifications from Grafana.
-- **Test:** Test notification sent to webhook.site.
+
+- **Purpose:** Receive Grafana alert notifications.
+
+- **Test:** Test notification sent using Grafana.
 
 ## 2. CPU Alert Rule
 
@@ -17,51 +21,29 @@
 | Threshold           | CPU > 80%                      |
 | Evaluation interval | 1 minute                       |
 | Pending period      | 2 minutes                      |
-| Keep firing for     | 0 seconds                      |
-| Current state       | Normal                         |
+| Severity            | warning                        |
+| Team                | platform                       |
+| Observed state      | Normal                         |
 
 ### PromQL
 
-```promql
+```
 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
 ```
 
-Calculates CPU usage percentage per node using the average idle CPU rate over 5 minutes.
+Calculates CPU usage percentage per instance using the average idle CPU rate over 5 minutes.
 
-### Labels
+**Pending period:** The 2-minute delay prevents alerts from firing during brief CPU spikes.
 
-```yaml
-severity: warning
-team: platform
-```
+**Annotations:**
 
-### Annotations
+- Summary: `High CPU usage on {{ $labels.instance }}`
 
-**Summary:**
+- Description: `CPU usage on {{ $labels.instance }} has been above 80% for more than 2 minutes.`
 
-```text
-High CPU usage on {{ $labels.instance }}
-```
+**Verification:** PromQL returned valid CPU values. Alert state was Normal.
 
-**Description:**
-
-```text
-CPU usage on {{ $labels.instance }} has been above 80% for more than 2 minutes.
-```
-
-### Pending Period
-
-The 2-minute pending period prevents alerts from firing during short CPU spikes, reducing unnecessary notifications.
-
-## 3. Notification Routing
-
-- **Routing:** Notification policy
-- **Current policy:** Default policy
-- **Current contact point:** `grafana-default-email`
-
-Custom notification policy configuration is pending.
-
-## 4. Pod Restart Alert Rule
+## 3. Pod Restart Alert Rule
 
 | Setting             | Value                                  |
 | ------------------- | -------------------------------------- |
@@ -72,46 +54,132 @@ Custom notification policy configuration is pending.
 | Pending period      | 0 minutes                              |
 | Severity            | critical                               |
 | Team                | platform                               |
+| Owner               | aswin-kl                               |
 | No Data handling    | Normal                                 |
+| Observed state      | Normal (No Data health)                |
 
 ### PromQL
 
-```promql
+```
 increase(kube_pod_container_status_restarts_total[15m]) > 3
 ```
 
-Detects containers that restart more than 3 times within 15 minutes.
+Detects containers that restarted more than 3 times during the last 15 minutes.
 
-### Annotations
+**Pending period:** Set to 0 because repeated restarts indicate application instability and require prompt attention.
 
-**Summary:**
+**Annotations:**
 
-```text
-Pod {{ $labels.pod }} in {{ $labels.namespace }} is crash-looping
+- Summary: `Pod {{ $labels.pod }} in {{ $labels.namespace }} is crash-looping`
+
+- Description: `Pod {{ $labels.pod }} has restarted {{ $values.A.Value }} times in the last 15 minutes`
+
+**Verification:** Prometheus returned restart metrics. No containers matched the threshold in the observed results.
+
+**No Data:** The query filters out containers with 3 or fewer restarts. Empty results are treated as Normal for this exercise. A separate alert should monitor missing metrics in production.
+
+## 4. Notification Policy
+
+**Routing tree:**
+
+```
+Default Policy → grafana-default-email
+    |
+    |-- severity=critical → Shared contact point
+    |
+    |-- severity=critical
+            → task-2-55-contact-point-aswin-kl
 ```
 
-**Description:**
+**Custom policy configuration:**
 
-```text
-Pod {{ $labels.pod }} has restarted {{ $values.A.Value }} times in the last 15 minutes
-```
+| Setting         | Value                              |
+| --------------- | ---------------------------------- |
+| Matchers        | `severity=critical`                |
+| Contact point   | `task-2-55-contact-point-aswin-kl` |
+| Group by        | `namespace`, `pod`                 |
+| Group wait      | 30 seconds                         |
+| Group interval  | 5 minutes                          |
+| Repeat interval | 1 hour                             |
 
-### Why no pending period?
+- **Group by:** Combines alerts with matching grouping-label values.
 
-Repeated container restarts indicate application instability. Unlike temporary CPU spikes, this condition requires immediate attention.
+- **Group wait:** Delays the first notification to collect related alerts.
 
-The alert fires as soon as the condition is detected.
+- **Group interval:** Controls when changes to an existing group trigger another notification.
 
-## 6. Silence Configuration
+- **Repeat interval:** Sends reminders for unchanged, still-firing alerts.
 
-- **Matchers:** `team=platform`,
+**Example:** Ten different pods in the same namespace create ten groups when grouping by both `namespace` and `pod`. and 10 notification will be send .
+
+## 5. Alert State Verification
+
+### CPU Alert
+
+- **State:** Normal
+
+- **Health:** OK
+
+- **Reason:** CPU usage was below the configured 80% threshold.
+
+- **Verification:** The PromQL query was executed in Grafana Explore and returned valid CPU usage values.
+
+### Pod Restart Alert
+
+- **State:** Normal
+
+- **Health:** No Data
+
+- **Reason:** No containers matched the condition of more than 3 restarts in 15 minutes.
+
+- **Verification:** The underlying restart metric was checked manually in Grafana Explore and showed restart increases of 0 for the observed containers.
+
+**Note:** The pod restart rule uses `No Data → Normal`, so an empty query result is treated as Normal.
+
+## 6. Silence
+
+- **Matchers:** `team=platform`, `owner=aswin-kl`
+
 - **Duration:** 1 hour
+
+- **Comment:** Silencing platform team alerts for Task 2.55 testing
+
 - **Purpose:** Suppress notifications during testing or planned maintenance.
-- **Result:** Silence created successfully.
 
-**Silence vs Resolved:**
+**Silenced vs Resolved:**
 
-- Silenced: Alert continues evaluating and may remain Firing, but notifications are suppressed.
-- Resolved: The alert condition is no longer true.
+- **Silenced:** Alert evaluation continues, but matching notifications are suppressed.
 
-**Production example:** Silence node alerts temporarily while performing planned Kubernetes node maintenance.
+- **Resolved:** The alert condition is no longer true.
+
+**Production example:** Silence alerts during planned Kubernetes node maintenance.
+
+## 7. Inhibition Rule
+
+```yaml
+inhibit_rules:
+  - source_matchers:
+      - alertname="task-2-55-cpu-alert-aswin-kl"
+      - severity="warning"
+    target_matchers:
+      - alertname="task-2-55-pod-restart-alert-aswin-kl"
+      - severity="critical"
+    equal:
+      - instance
+```
+
+**Explanation:**
+
+- **Source:** CPU alert that activates inhibition.
+
+- **Target:** Pod restart alert whose notifications are suppressed.
+
+- **Equal:** Both alerts must have the same `instance` label value.
+
+**Purpose:** Reduce related notifications when high CPU usage and pod restarts occur together.
+
+**Note:** This rule is documented but not deployed. Production implementation requires a common node-identifying label on both alerts. Suppressing a critical restart alert based on a warning-level CPU alert should also be reviewed carefully.
+
+**Silence vs Inhibition:** A silence suppresses notifications for a specified time. Inhibition automatically suppresses related notifications while a matching source alert is firing.
+
+**Node failure example:** If one node failure triggers 20 pod alerts, inhibition is preferable because it automatically suppresses related pod notifications.
