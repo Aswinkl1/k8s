@@ -23,7 +23,7 @@ I will use **`$namespace`** as a dashboard variable.
 
 This allows me to select different Kubernetes namespaces from a dropdown without creating separate dashboards for each namespace.
 
-All seven panels will update based on the selected namespace.
+All six panels will update based on the selected namespace.
 
 ## Goal
 
@@ -125,7 +125,7 @@ sum(kube_node_status_capacity{resource="cpu", unit="core"})
 
 Shows how much of the Kubernetes nodes' total CPU capacity is consumed by the selected namespace. This is **not** CPU usage as a percentage of pod requests or limits.
 
-### Panel 7 — Namespace Error Logs
+### Panel 6 — Namespace Error Logs
 
 **Data source:** Loki
 **Visualization:** Logs
