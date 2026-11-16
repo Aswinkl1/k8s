@@ -221,4 +221,4 @@ loki only index the labels because indexing all of logs makes the index big and 
 
 if we only index the label the index becomes very small and the cost is smaller too .
 
-the tradeoff is that it might get slower for larger logs like if we have a stream group with a lot of logs getting and filter get a bit slower .
+the tradeoff is that it might get slower for larger logs like if we have a stream group with a lot of logs getting and filter get a bit slower
