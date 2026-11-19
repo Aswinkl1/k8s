@@ -1,0 +1,15 @@
+# On-demand base backup, for example right before a risky change or during the demo.
+# Change metadata.name for every new backup (or use: kubectl cnpg backup task-4-7-aswin-pg -n aswin-kl -m plugin --plugin-name barman-cloud.cloudnative-pg.io).
+apiVersion: postgresql.cnpg.io/v1
+kind: Backup
+metadata:
+  name: task-4-7-aswin-backup-manual-1
+  namespace: aswin-kl
+  labels:
+    app.kubernetes.io/name: task-4-7-aswin-pg
+spec:
+  cluster:
+    name: task-4-7-aswin-pg
+  method: plugin
+  pluginConfiguration:
+    name: barman-cloud.cloudnative-pg.io

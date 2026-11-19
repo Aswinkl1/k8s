@@ -1,0 +1,86 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: task-4-7-aswin-pg
+  namespace: aswin-kl
+  labels:
+    app.kubernetes.io/name: task-4-7-aswin-pg
+spec:
+  description: "Task 4.7 production PostgreSQL (aswin)"
+
+  # 1 primary + 2 replicas
+  instances: 3
+  imageName: ghcr.io/cloudnative-pg/postgresql:17.6
+
+  # Operator performs the switchover itself during upgrades
+  primaryUpdateStrategy: unsupervised
+
+  # Applied to every pod, job, service and PVC the operator creates (Kyverno require-labels)
+  inheritedMetadata:
+    labels:
+      app.kubernetes.io/name: task-4-7-aswin-pg
+      app.kubernetes.io/part-of: task-4-7
+
+  # No "postgres" superuser secret is generated; the app only gets the "app" role
+  enableSuperuserAccess: false
+
+  bootstrap:
+    initdb:
+      database: app
+      owner: app
+      secret:
+        name: task-4-7-aswin-app-user
+
+  postgresql:
+    parameters:
+      max_connections: "100"
+      shared_buffers: "128MB"
+      effective_cache_size: "384MB"
+      log_min_duration_statement: "1000"
+      log_connections: "on"
+      log_disconnections: "on"
+      archive_timeout: "300"
+      
+    # A commit returns only after at least one replica has flushed it to disk.
+    # With "required", writes block if no replica is available, rather than
+    # silently becoming asynchronous.
+    synchronous:
+      method: any
+      number: 1
+      dataDurability: required
+
+    # Added after CNPG's fixed rules (local socket, streaming_replica and
+    # cnpg_pooler_pgbouncer via client certificates), before its default rule.
+    pg_hba:
+      - hostssl app app all scram-sha-256
+      - host all all all reject
+
+  storage:
+    storageClass: civo-volume
+    size: 5Gi
+
+  # Preferred, not required: with exactly 3 nodes, "required" would leave a
+  # replacement instance Pending while a node is down.
+  affinity:
+    enablePodAntiAffinity: true
+    podAntiAffinityType: preferred
+    topologyKey: kubernetes.io/hostname
+
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      memory: 1Gi
+
+  # Time allowed for a clean primary shutdown before failover is forced
+  stopDelay: 60
+  smartShutdownTimeout: 15
+  switchoverDelay: 60
+
+  # Continuous WAL archiving + base backups through the Barman Cloud plugin
+  plugins:
+    - name: barman-cloud.cloudnative-pg.io
+      isWALArchiver: true
+      parameters:
+        barmanObjectName: task-4-7-aswin-objectstore

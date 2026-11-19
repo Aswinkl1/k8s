@@ -1,0 +1,61 @@
+# Point-in-time recovery into a NEW cluster. The original cluster is not touched.
+#
+# 1. Set targetTime to a moment just BEFORE the mistake (UTC, RFC 3339).
+#    Example: get it with  SELECT now();  before running the bad statement.
+# 2. kubectl apply -f 03-backup/restore-pitr.yaml
+# 3. Verify the data, then point the app at the restored cluster or copy the rows back.
+#
+# The restored cluster does not archive WAL, so it cannot overwrite the
+# original cluster's backups in the bucket.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: task-4-7-aswin-pg-restore
+  namespace: aswin-kl
+  labels:
+    app.kubernetes.io/name: task-4-7-aswin-pg-restore
+spec:
+  instances: 1
+  imageName: ghcr.io/cloudnative-pg/postgresql:17.6
+
+  inheritedMetadata:
+    labels:
+      app.kubernetes.io/name: task-4-7-aswin-pg-restore
+      app.kubernetes.io/part-of: task-4-7
+
+  enableSuperuserAccess: false
+
+  bootstrap:
+    recovery:
+      source: origin
+      database: app
+      owner: app
+      secret:
+        name: task-4-7-aswin-app-user
+      recoveryTarget:
+        targetTime: "2026-11-18T20:42:37Z"
+
+  externalClusters:
+    - name: origin
+      plugin:
+        name: barman-cloud.cloudnative-pg.io
+        parameters:
+          barmanObjectName: task-4-7-aswin-objectstore
+          # Folder in the bucket = name of the cluster that wrote the backups
+          serverName: task-4-7-aswin-pg
+
+  postgresql:
+    pg_hba:
+      - hostssl app app all scram-sha-256
+      - host all all all reject
+
+  storage:
+    storageClass: civo-volume
+    size: 5Gi
+
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      memory: 1Gi

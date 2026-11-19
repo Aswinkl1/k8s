@@ -1,0 +1,73 @@
+# Load test through the write pooler: 500 client connections for 2 minutes.
+# Postgres should only ever see ~40 backend connections (2 PgBouncer pods x pool of 20).
+#
+#   kubectl apply -f 07-demo/pgbench-job.yaml
+#   kubectl logs -n aswin-kl job/task-4-7-aswin-pgbench -f
+#   kubectl delete -f 07-demo/pgbench-job.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: task-4-7-aswin-pgbench
+  namespace: aswin-kl
+  labels:
+    app.kubernetes.io/name: task-4-7-aswin-pgbench
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: task-4-7-aswin-pgbench
+        app.kubernetes.io/part-of: task-4-7
+        pg-access: "true"
+    spec:
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 26
+        runAsGroup: 26
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: pgbench
+          image: ghcr.io/cloudnative-pg/postgresql:17.6
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              set -e
+              echo "Initialising pgbench tables (scale 10)..."
+              for i in $(seq 1 30); do
+              pg_isready -h task-4-7-aswin-pooler-rw.aswin-kl.svc -p 5432 && break
+              echo "pooler not reachable yet ($i)"
+              sleep 2
+              done
+              pgbench -i -s 10 --no-vacuum
+              echo "Running 500 clients for 120s through PgBouncer..."
+              pgbench -c 500 -j 8 -T 120 -P 10 --no-vacuum
+          env:
+            - name: PGHOST
+              value: task-4-7-aswin-pooler-rw.aswin-kl.svc
+            - name: PGUSER
+              valueFrom:
+                secretKeyRef:
+                  name: task-4-7-aswin-app-user
+                  key: username
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: task-4-7-aswin-app-user
+                  key: password
+            - name: PGDATABASE
+              value: app
+            - name: PGSSLMODE
+              value: require
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 200m
+              memory: 128Mi
+            limits:
+              memory: 512Mi

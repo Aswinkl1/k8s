@@ -1,0 +1,53 @@
+# Authorised client: has pg-access=true, so the pooler NetworkPolicy lets it in.
+# Credentials come from the app-user secret, never from this file.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: task-4-7-aswin-pg-client
+  namespace: aswin-kl
+  labels:
+    app.kubernetes.io/name: task-4-7-aswin-pg-client
+    app.kubernetes.io/part-of: task-4-7
+    pg-access: "true"
+spec:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 26
+    runAsGroup: 26
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: psql
+      image: ghcr.io/cloudnative-pg/postgresql:17.6
+      command: ["sleep", "infinity"]
+      env:
+        - name: PGUSER
+          valueFrom:
+            secretKeyRef:
+              name: task-4-7-aswin-app-user
+              key: username
+        - name: PGPASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: task-4-7-aswin-app-user
+              key: password
+        - name: PGDATABASE
+          value: app
+        - name: PGSSLMODE
+          value: require
+        - name: PGCONNECT_TIMEOUT
+          value: "5"
+        - name: RW_HOST
+          value: task-4-7-aswin-pooler-rw.aswin-kl.svc
+        - name: RO_HOST
+          value: task-4-7-aswin-pooler-ro.aswin-kl.svc
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: ["ALL"]
+      resources:
+        requests:
+          cpu: 10m
+          memory: 32Mi
+        limits:
+          memory: 128Mi

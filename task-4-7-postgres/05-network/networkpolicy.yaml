@@ -1,0 +1,103 @@
+# Ingress rules for the database and the poolers.
+# Only these pods are selected, so nothing else in aswin-kl is affected.
+#
+#   app pod (pg-access=true) --5432--> pooler --5432--> postgres instances
+#   postgres <--5432/8000--> postgres        (replication, instance status)
+#   cnpg-system operator --8000--> postgres  (status, promote, fencing)
+#   observability Prometheus --9187--> postgres, --9127--> pooler
+
+# Postgres instance pods: only poolers, peers, the operator and Prometheus
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: task-4-7-aswin-pg-instances
+  namespace: aswin-kl
+  labels:
+    app.kubernetes.io/name: task-4-7-aswin-pg
+spec:
+  podSelector:
+    matchExpressions:
+      - key: cnpg.io/cluster
+        operator: In
+        values:
+          - task-4-7-aswin-pg
+          - task-4-7-aswin-pg-restore
+  policyTypes:
+    - Ingress
+  ingress:
+    # Replication and pg_basebackup between instances of the same cluster
+    - from:
+        - podSelector:
+            matchLabels:
+              cnpg.io/cluster: task-4-7-aswin-pg
+      ports:
+        - protocol: TCP
+          port: 5432
+        - protocol: TCP
+          port: 8000
+
+    # PgBouncer poolers
+    - from:
+        - podSelector:
+            matchExpressions:
+              - key: cnpg.io/poolerName
+                operator: In
+                values:
+                  - task-4-7-aswin-pooler-rw
+                  - task-4-7-aswin-pooler-ro
+      ports:
+        - protocol: TCP
+          port: 5432
+
+    # CNPG operator talks to the instance manager's HTTP API
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: cnpg-system
+      ports:
+        - protocol: TCP
+          port: 8000
+
+    # Prometheus scrapes the instance metrics exporter
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - protocol: TCP
+          port: 9187
+---
+# PgBouncer pods: only labelled application pods in aswin-kl, and Prometheus
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: task-4-7-aswin-pg-poolers
+  namespace: aswin-kl
+  labels:
+    app.kubernetes.io/name: task-4-7-aswin-pg
+spec:
+  podSelector:
+    matchExpressions:
+      - key: cnpg.io/poolerName
+        operator: In
+        values:
+          - task-4-7-aswin-pooler-rw
+          - task-4-7-aswin-pooler-ro
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              pg-access: "true"
+      ports:
+        - protocol: TCP
+          port: 5432
+
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - protocol: TCP
+          port: 9127

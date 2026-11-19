@@ -1,0 +1,43 @@
+# Replace <BUCKET> and <REGION> before applying (see 00-prereqs/prereqs.md).
+apiVersion: barmancloud.cnpg.io/v1
+kind: ObjectStore
+metadata:
+  name: task-4-7-aswin-objectstore
+  namespace: aswin-kl
+  labels:
+    app.kubernetes.io/name: task-4-7-aswin-pg
+spec:
+  # Base backups older than this, and the WAL only they need, are deleted
+  retentionPolicy: "7d"
+
+  configuration:
+    # Barman writes under <destinationPath>/<serverName>/{base,wals}
+    destinationPath: s3://task-4-7-aswin-kl-pg-backups/
+    endpointURL: https://s3.ap-south-1.amazonaws.com
+
+    s3Credentials:
+      accessKeyId:
+        name: task-4-7-aswin-s3-creds
+        key: ACCESS_KEY_ID
+      secretAccessKey:
+        name: task-4-7-aswin-s3-creds
+        key: ACCESS_SECRET_KEY
+      region:
+        name: task-4-7-aswin-s3-creds
+        key: REGION
+    wal:
+      compression: gzip
+      maxParallel: 2
+
+    data:
+      compression: gzip
+      jobs: 2
+
+  # The plugin runs as a sidecar in every instance pod
+  instanceSidecarConfiguration:
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        memory: 256Mi
