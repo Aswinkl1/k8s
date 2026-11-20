@@ -1,0 +1,10 @@
+.git
+.github
+.gitignore
+.dockerignore
+terraform
+*.md
+__pycache__
+*.pyc
+.venv
+venv

@@ -1,0 +1,14 @@
+aws_region = "ap-south-1"
+
+# Docker Hub repository (no tag); must be public so Fargate can pull without credentials.
+dockerhub_image = "<dockerhub-username>/task-3-49-flask"
+
+github_owner  = "<github-username-or-org>"
+github_repo   = "<repo-name>"
+github_branch = "main"
+
+# Set to false if `aws iam list-open-id-connect-providers` already shows token.actions.githubusercontent.com
+create_oidc_provider = true
+
+log_retention_days = 7
+container_insights = false
